@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Genre, Tweet, ScheduledTweet } from '../types';
-import { generateTweetsByGenre } from '../utils/claudeApi';
+import { generateTweetsByGenre } from '../utils/geminiApi';
 import { Spinner } from './Spinner';
 import { TweetCard } from './TweetCard';
 
