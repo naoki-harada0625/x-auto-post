@@ -4,6 +4,7 @@ import { AutoGenerateTab } from './components/AutoGenerateTab';
 import { KeywordTab } from './components/KeywordTab';
 import { ScheduledList } from './components/ScheduledList';
 import { Toast } from './components/Toast';
+import { SettingsModal } from './components/SettingsModal';
 import {
   loadScheduled,
   addScheduledTweet,
@@ -24,6 +25,7 @@ export default function App() {
   const [scheduled, setScheduled] = useState<ScheduledTweet[]>(loadScheduled);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [triggering, setTriggering] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const showToast = useCallback((message: string, type: ToastState['type'] = 'success') => {
     setToast({ message, type });
@@ -80,14 +82,23 @@ export default function App() {
           <h1 className="app-title">
             <span className="x-logo">𝕏</span> 自動投稿ツール
           </h1>
-          <button
-            className={`btn btn--trigger ${triggering ? 'btn--loading' : ''}`}
-            onClick={handleTrigger}
-            disabled={triggering}
-            title="GitHub Actions を手動トリガー（即時投稿・期限切れ予約を処理）"
-          >
-            {triggering ? '⏳' : '▶'} 今すぐ実行
-          </button>
+          <div className="header-actions">
+            <button
+              className={`btn btn--trigger ${triggering ? 'btn--loading' : ''}`}
+              onClick={handleTrigger}
+              disabled={triggering}
+              title="GitHub Actions を手動トリガー（即時投稿・期限切れ予約を処理）"
+            >
+              {triggering ? '⏳' : '▶'} 今すぐ実行
+            </button>
+            <button
+              className="btn btn--icon btn--settings"
+              onClick={() => setShowSettings(true)}
+              title="API設定"
+            >
+              ⚙️
+            </button>
+          </div>
         </div>
       </header>
 
@@ -132,6 +143,10 @@ export default function App() {
           type={toast.type}
           onClose={() => setToast(null)}
         />
+      )}
+
+      {showSettings && (
+        <SettingsModal onClose={() => setShowSettings(false)} />
       )}
     </div>
   );

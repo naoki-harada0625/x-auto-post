@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Tweet } from '../types';
-import { generateTweetsByKeyword } from '../utils/claudeApi';
+import { generateTweetsByKeyword } from '../utils/geminiApi';
 import { Spinner } from './Spinner';
 import { TweetCard } from './TweetCard';
 

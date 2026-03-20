@@ -1,4 +1,5 @@
 import type { ScheduledTweet } from '../types';
+import { getGithubToken } from './settings';
 
 const STORAGE_KEY = 'x-auto-post-scheduled';
 
@@ -38,14 +39,14 @@ export function exportToJson(tweets: ScheduledTweet[]): string {
  * VITE_GITHUB_TOKEN が設定されている場合のみ動作。
  */
 export async function triggerGitHubActions(): Promise<void> {
-  const token = import.meta.env.VITE_GITHUB_TOKEN as string | undefined;
+  const token = getGithubToken();
   const owner = 'naoki-harada0625';
   const repo = 'x-auto-post';
   const workflow = 'post-tweets.yml';
 
   if (!token) {
     throw new Error(
-      'VITE_GITHUB_TOKEN が設定されていません。\nGitHub > Settings > Developer settings > Personal access tokens でトークンを発行し、.env ファイルに設定してください。'
+      'GitHub Token が設定されていません。\n右上の⚙️ボタンから設定してください。'
     );
   }
 
