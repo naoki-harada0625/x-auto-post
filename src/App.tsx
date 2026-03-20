@@ -9,6 +9,8 @@ import {
   loadScheduled,
   addScheduledTweet,
   removeScheduledTweet,
+  pushTweetToGitHub,
+  removeTweetFromGitHub,
   triggerGitHubActions,
 } from './utils/scheduledTweets';
 import './App.css';
@@ -31,7 +33,7 @@ export default function App() {
     setToast({ message, type });
   }, []);
 
-  const handleImmediate = useCallback((tweet: Tweet) => {
+  const handleImmediate = useCallback(async (tweet: Tweet) => {
     const entry: ScheduledTweet = {
       id: `${tweet.id}-imm-${Date.now()}`,
       text: tweet.text,
@@ -41,10 +43,19 @@ export default function App() {
     };
     const updated = addScheduledTweet(entry);
     setScheduled(updated);
-    showToast('即時投稿キューに追加しました。「今すぐ実行」ボタンで GitHub Actions をトリガーしてください。', 'info');
+    setTriggering(true);
+    try {
+      await pushTweetToGitHub(entry);
+      await triggerGitHubActions();
+      showToast('GitHub に保存しアクションをトリガーしました。1〜2分後に投稿されます。', 'success');
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'エラーが発生しました', 'error');
+    } finally {
+      setTriggering(false);
+    }
   }, [showToast]);
 
-  const handleSchedule = useCallback((tweet: Tweet, scheduledAt: string) => {
+  const handleSchedule = useCallback(async (tweet: Tweet, scheduledAt: string) => {
     const entry: ScheduledTweet = {
       id: `${tweet.id}-sch-${Date.now()}`,
       text: tweet.text,
@@ -54,13 +65,23 @@ export default function App() {
     };
     const updated = addScheduledTweet(entry);
     setScheduled(updated);
-    showToast('予約投稿に追加しました', 'success');
+    try {
+      await pushTweetToGitHub(entry);
+      showToast('予約投稿に追加しました。5分おきのcronで自動投稿されます。', 'success');
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'GitHub への保存に失敗しました', 'error');
+    }
   }, [showToast]);
 
-  const handleRemove = useCallback((id: string) => {
+  const handleRemove = useCallback(async (id: string) => {
     const updated = removeScheduledTweet(id);
     setScheduled(updated);
     showToast('削除しました', 'info');
+    try {
+      await removeTweetFromGitHub(id);
+    } catch {
+      // GitHub側の削除失敗はサイレント
+    }
   }, [showToast]);
 
   const handleTrigger = async () => {
