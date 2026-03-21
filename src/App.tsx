@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { Tweet, ScheduledTweet } from './types';
 import { AutoGenerateTab } from './components/AutoGenerateTab';
 import { KeywordTab } from './components/KeywordTab';
@@ -12,6 +12,7 @@ import {
   pushTweetToGitHub,
   removeTweetFromGitHub,
   triggerGitHubActions,
+  syncFromGitHub,
 } from './utils/scheduledTweets';
 import './App.css';
 
@@ -31,6 +32,17 @@ export default function App() {
 
   const showToast = useCallback((message: string, type: ToastState['type'] = 'success') => {
     setToast({ message, type });
+  }, []);
+
+  // 画面を開いた時に GitHub から最新の状態を同期
+  useEffect(() => {
+    syncFromGitHub().then((tweets) => {
+      if (tweets !== null) {
+        setScheduled(tweets);
+        showToast('リストを更新しました', 'info');
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleImmediate = useCallback(async (tweet: Tweet) => {
@@ -88,7 +100,16 @@ export default function App() {
     setTriggering(true);
     try {
       await triggerGitHubActions();
-      showToast('GitHub Actions をトリガーしました！数分後に投稿されます。', 'success');
+      showToast('GitHub Actions をトリガーしました！30秒後にリストを更新します。', 'success');
+      // 30秒後に GitHub から状態を再取得して投稿済みエントリを反映
+      setTimeout(() => {
+        syncFromGitHub().then((tweets) => {
+          if (tweets !== null) {
+            setScheduled(tweets);
+            showToast('リストを更新しました', 'info');
+          }
+        });
+      }, 30000);
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'トリガーに失敗しました', 'error');
     } finally {
