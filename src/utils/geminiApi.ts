@@ -16,12 +16,29 @@ function buildKeywordPrompt(keyword: string): string {
 [{"text": "ツイート本文", "tags": ["#タグ1", "#タグ2"]}]`;
 }
 
+const FIXED_TAGS = ['#Webライター', '#Webライターとつながりたい'];
+
+function mergeTags(aiTags: string[], tweetText: string): string[] {
+  const lowerFixed = FIXED_TAGS.map((t) => t.toLowerCase());
+  // Remove AI tags that duplicate fixed tags
+  const aiOnly = aiTags.filter((t) => !lowerFixed.includes(t.toLowerCase()));
+
+  const fits = (tags: string[]) =>
+    (tags.length > 0 ? `${tweetText}\n${tags.join(' ')}` : tweetText).length <= 280;
+
+  // Trim AI tags from the end if over 280, always keep fixed tags
+  while (aiOnly.length > 0 && !fits([...aiOnly, ...FIXED_TAGS])) {
+    aiOnly.pop();
+  }
+  return [...aiOnly, ...FIXED_TAGS];
+}
+
 function parseResponse(text: string): Tweet[] {
   const raw = JSON.parse(text) as Array<{ text: string; tags: string[] }>;
   return raw.map((item, i) => ({
     id: `tweet-${Date.now()}-${i}`,
     text: item.text,
-    tags: item.tags ?? [],
+    tags: mergeTags(item.tags ?? [], item.text),
   }));
 }
 
