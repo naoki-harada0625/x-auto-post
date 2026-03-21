@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """
-Auto-post tweets based on auto-schedule.json.
+Unified auto-post script.
 
-Runs every 5 minutes via cron.
-For each enabled, unposted slot whose date+time matches the current JST time
-(within the first 5 minutes of the scheduled hour):
-  1. Generate a tweet via Gemini API (with Google Search grounding)
-  2. Post to X via tweepy
-  3. Mark the slot as posted: true
+Runs every 15 minutes via cron (auto-post.yml).
+
+Part 1 – scheduled-tweets.json (予約投稿):
+  - immediate: true のエントリは即時投稿
+  - scheduledAt が現在JST時刻以降かつ15分以内のエントリを投稿
+  - 投稿済みエントリはリストから削除
+
+Part 2 – auto-schedule.json (カレンダー自動投稿):
+  - 現在JST時刻が 06:00/12:00/18:00/24:00 の最初の15分以内のスロットを投稿
+  - Gemini API + Google Search grounding でツイートを生成
+  - 投稿済みスロットに posted: true をマーク
 """
 
 import json
@@ -15,16 +20,19 @@ import os
 import re
 import sys
 import urllib.request
-from datetime import datetime, date as date_type, timedelta, timezone
+from datetime import datetime, date as date_type, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import tweepy
 
-JSON_PATH = Path(__file__).parent.parent / "auto-schedule.json"
+ROOT = Path(__file__).parent.parent
+SCHEDULED_JSON_PATH = ROOT / "scheduled-tweets.json"
+AUTO_SCHEDULE_JSON_PATH = ROOT / "auto-schedule.json"
+
 JST = ZoneInfo("Asia/Tokyo")
 
-# Slot time → JST hour (24:00 maps to hour 0 of the *next* day)
+# カレンダースロット時刻 → JST hour（24:00 は翌日 0 時）
 SLOT_HOURS: dict[str, int] = {
     "06:00": 6,
     "12:00": 12,
@@ -54,20 +62,95 @@ TIME_THEMES: dict[str, str] = {
 }
 
 
-def load_schedule() -> dict:
-    if not JSON_PATH.exists():
-        return {"slots": [], "defaultTimes": ["06:00", "12:00", "18:00", "24:00"]}
-    with open(JSON_PATH, encoding="utf-8") as f:
+# ─── helpers ───────────────────────────────────────────────────────────────
+
+def build_tweet_text(text: str, tags: list[str]) -> str:
+    full = f"{text}\n{' '.join(tags)}" if tags else text
+    return full[:280]
+
+
+def get_twitter_client() -> tweepy.Client:
+    return tweepy.Client(
+        consumer_key=os.environ["X_CONSUMER_KEY"],
+        consumer_secret=os.environ["X_CONSUMER_SECRET"],
+        access_token=os.environ["X_ACCESS_TOKEN"],
+        access_token_secret=os.environ["X_ACCESS_TOKEN_SECRET"],
+    )
+
+
+# ─── Part 1: scheduled-tweets.json ─────────────────────────────────────────
+
+def load_scheduled_tweets() -> list[dict]:
+    if not SCHEDULED_JSON_PATH.exists():
+        return []
+    with open(SCHEDULED_JSON_PATH, encoding="utf-8") as f:
         return json.load(f)
 
 
-def save_schedule(schedule: dict) -> None:
-    with open(JSON_PATH, "w", encoding="utf-8") as f:
+def save_scheduled_tweets(tweets: list[dict]) -> None:
+    with open(SCHEDULED_JSON_PATH, "w", encoding="utf-8") as f:
+        json.dump(tweets, f, ensure_ascii=False, indent=2)
+
+
+def should_post_scheduled(entry: dict, now_jst: datetime) -> bool:
+    if entry.get("posted"):
+        return False
+    if entry.get("immediate"):
+        return True
+    scheduled_at = entry.get("scheduledAt")
+    if scheduled_at:
+        scheduled_dt = datetime.fromisoformat(scheduled_at.replace("Z", "+00:00"))
+        scheduled_dt_jst = scheduled_dt.astimezone(JST)
+        diff = now_jst - scheduled_dt_jst
+        # 予定時刻を過ぎている、かつ15分以内（二重投稿防止）
+        return timedelta(0) <= diff <= timedelta(minutes=15)
+    return False
+
+
+def process_scheduled_tweets(client: tweepy.Client, now_jst: datetime) -> None:
+    print("\n=== Part 1: scheduled-tweets.json ===")
+    tweets = load_scheduled_tweets()
+    if not tweets:
+        print("No scheduled tweets found.")
+        return
+
+    to_post = [t for t in tweets if should_post_scheduled(t, now_jst)]
+    if not to_post:
+        print("No scheduled tweets to post at this time.")
+        return
+
+    posted_ids: set[str] = set()
+    for entry in to_post:
+        tweet_text = build_tweet_text(entry.get("text", ""), entry.get("tags", []))
+        try:
+            response = client.create_tweet(text=tweet_text)
+            tweet_id = response.data["id"]
+            print(f"Posted tweet id={tweet_id}: {tweet_text[:60]}...")
+            posted_ids.add(entry["id"])
+        except Exception as exc:  # noqa: BLE001
+            print(f"Failed to post {entry['id']}: {exc}", file=sys.stderr)
+
+    if posted_ids:
+        remaining = [t for t in tweets if t["id"] not in posted_ids]
+        save_scheduled_tweets(remaining)
+        print(f"Done. Posted {len(posted_ids)}, {len(remaining)} remaining.")
+
+
+# ─── Part 2: auto-schedule.json ────────────────────────────────────────────
+
+def load_auto_schedule() -> dict:
+    if not AUTO_SCHEDULE_JSON_PATH.exists():
+        return {"slots": [], "defaultTimes": ["06:00", "12:00", "18:00", "24:00"]}
+    with open(AUTO_SCHEDULE_JSON_PATH, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_auto_schedule(schedule: dict) -> None:
+    with open(AUTO_SCHEDULE_JSON_PATH, "w", encoding="utf-8") as f:
         json.dump(schedule, f, ensure_ascii=False, indent=2)
 
 
-def should_post(slot: dict, now_jst: datetime) -> bool:
-    """Return True if this slot should be posted right now."""
+def should_post_slot(slot: dict, now_jst: datetime) -> bool:
     if not slot.get("enabled") or slot.get("posted"):
         return False
 
@@ -76,7 +159,6 @@ def should_post(slot: dict, now_jst: datetime) -> bool:
     slot_hour = SLOT_HOURS[slot_time]
 
     if slot_time == "24:00":
-        # 24:00 of slot_date == 00:00 of the next calendar day
         check_date = date_type.fromisoformat(slot_date_str) + timedelta(days=1)
     else:
         check_date = date_type.fromisoformat(slot_date_str)
@@ -84,7 +166,7 @@ def should_post(slot: dict, now_jst: datetime) -> bool:
     return (
         now_jst.date() == check_date
         and now_jst.hour == slot_hour
-        and now_jst.minute < 5  # first 5-minute window of the hour
+        and now_jst.minute < 15  # cron が15分おきなので15分以内
     )
 
 
@@ -107,7 +189,6 @@ JSONのみ返してください（マークダウン不要）。形式:
 
 
 def generate_tweet(slot_time: str) -> tuple[str, list[str]]:
-    """Call Gemini API with Google Search grounding and return (text, tags)."""
     api_key = os.environ["GEMINI_API_KEY"]
     prompt = build_prompt(slot_time)
 
@@ -132,7 +213,6 @@ def generate_tweet(slot_time: str) -> tuple[str, list[str]]:
 
     raw_text: str = data["candidates"][0]["content"]["parts"][0]["text"]
 
-    # Extract JSON object from possibly noisy grounding response
     match = re.search(r'\{[^{}]*"text"\s*:[^{}]*\}', raw_text, re.DOTALL)
     if match:
         tweet_data = json.loads(match.group())
@@ -140,39 +220,20 @@ def generate_tweet(slot_time: str) -> tuple[str, list[str]]:
             "tags", ["#Webライター", "#Webライターとつながりたい"]
         )
 
-    # Fallback: use raw text with fixed tags
     return raw_text[:140], ["#Webライター", "#Webライターとつながりたい"]
 
 
-def build_tweet_text(text: str, tags: list[str]) -> str:
-    full = f"{text}\n{' '.join(tags)}" if tags else text
-    return full[:280]
-
-
-def get_twitter_client() -> tweepy.Client:
-    return tweepy.Client(
-        consumer_key=os.environ["X_CONSUMER_KEY"],
-        consumer_secret=os.environ["X_CONSUMER_SECRET"],
-        access_token=os.environ["X_ACCESS_TOKEN"],
-        access_token_secret=os.environ["X_ACCESS_TOKEN_SECRET"],
-    )
-
-
-def main() -> None:
-    schedule = load_schedule()
+def process_auto_schedule(client: tweepy.Client, now_jst: datetime) -> None:
+    print("\n=== Part 2: auto-schedule.json ===")
+    schedule = load_auto_schedule()
     slots: list[dict] = schedule.get("slots", [])
 
-    now_jst = datetime.now(JST)
-    print(f"Current JST: {now_jst.strftime('%Y-%m-%d %H:%M')} JST")
-
-    to_post = [s for s in slots if should_post(s, now_jst)]
+    to_post = [s for s in slots if should_post_slot(s, now_jst)]
     if not to_post:
-        print("No slots to post at this time.")
+        print("No auto-schedule slots to post at this time.")
         return
 
-    client = get_twitter_client()
     any_posted = False
-
     for slot in to_post:
         slot_id = f"{slot['date']} {slot['time']}"
         try:
@@ -183,7 +244,6 @@ def main() -> None:
             tweet_id = response.data["id"]
             print(f"Posted tweet id={tweet_id}: {tweet_text[:60]}...")
 
-            # Mark slot as posted
             for s in slots:
                 if s["date"] == slot["date"] and s["time"] == slot["time"]:
                     s["posted"] = True
@@ -194,9 +254,22 @@ def main() -> None:
 
     if any_posted:
         schedule["slots"] = slots
-        save_schedule(schedule)
-        print("Schedule updated with posted flags.")
-    print("Done.")
+        save_auto_schedule(schedule)
+        print("Auto-schedule updated with posted flags.")
+
+
+# ─── main ──────────────────────────────────────────────────────────────────
+
+def main() -> None:
+    now_jst = datetime.now(JST)
+    print(f"Current JST: {now_jst.strftime('%Y-%m-%d %H:%M')} JST")
+
+    client = get_twitter_client()
+
+    process_scheduled_tweets(client, now_jst)
+    process_auto_schedule(client, now_jst)
+
+    print("\nAll done.")
 
 
 if __name__ == "__main__":
