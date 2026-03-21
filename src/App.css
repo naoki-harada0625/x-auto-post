@@ -556,6 +556,400 @@
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
+/* ===== Schedule Tab ===== */
+.schedule-tab {
+  padding-bottom: 32px;
+}
+
+.schedule-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.schedule-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.schedule-nav-btn {
+  padding: 6px 12px;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.schedule-month-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 110px;
+  text-align: center;
+}
+
+.btn--sm {
+  padding: 7px 14px;
+  font-size: 13px;
+}
+
+.schedule-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.schedule-stats {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.stat { font-weight: 600; }
+.stat--enabled { color: var(--accent); }
+.stat--posted { color: #16a34a; }
+.stat--saving { color: var(--text-secondary); font-weight: 400; }
+
+.schedule-legend {
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.leg { display: flex; align-items: center; gap: 3px; }
+.leg-dot { font-size: 11px; font-weight: 700; }
+.leg-dot--enabled { color: var(--accent); }
+.leg-dot--posted { color: #16a34a; }
+.leg-dot--off { color: var(--text-secondary); }
+
+/* ===== Month Calendar ===== */
+.cal {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.cal-wd {
+  padding: 8px 2px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+.cal-wd--0 { color: #dc2626; }
+.cal-wd--6 { color: var(--accent); }
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.cal-cell {
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 4px 3px;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+}
+
+.cal-cell:nth-child(7n) {
+  border-right: none;
+}
+
+.cal-cell--empty {
+  background: var(--bg-secondary);
+}
+
+.cal-cell--today .cal-cell-num {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cal-cell-num {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cal-cell-slots {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  flex: 1;
+}
+
+.cslot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 1px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 9px;
+  line-height: 1.2;
+  transition: background 0.15s, border-color 0.15s;
+  background: var(--bg-secondary);
+  min-height: 26px;
+}
+
+.cslot:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.cslot:disabled { cursor: default; }
+
+.cslot--enabled {
+  background: var(--accent-light);
+  border-color: var(--accent) !important;
+}
+
+.cslot--posted {
+  background: #dcfce7;
+  border-color: #16a34a !important;
+}
+
+.cslot-dot {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.cslot--enabled .cslot-dot { color: var(--accent); }
+.cslot--posted .cslot-dot { color: #16a34a; }
+.cslot--off .cslot-dot { color: var(--text-secondary); }
+
+.cslot-time {
+  font-size: 9px;
+  color: var(--text-secondary);
+  line-height: 1;
+}
+
+/* ===== Week View (mobile) ===== */
+.week-view {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.week-nav {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.week-days {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.week-day {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.week-day--today {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.week-day-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 36px;
+}
+
+.week-dow {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+.week-dow--0 { color: #dc2626; }
+.week-dow--6 { color: var(--accent); }
+
+.week-date {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.week-slots {
+  display: flex;
+  flex: 1;
+  gap: 6px;
+}
+
+.wslot {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 5px 4px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  background: var(--bg-secondary);
+  transition: background 0.15s, border-color 0.15s;
+  gap: 2px;
+}
+
+.wslot:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.wslot:disabled { cursor: default; }
+
+.wslot--enabled {
+  background: var(--accent-light);
+  border-color: var(--accent) !important;
+}
+
+.wslot--posted {
+  background: #dcfce7;
+  border-color: #16a34a !important;
+}
+
+.wslot-dot {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.wslot--enabled .wslot-dot { color: var(--accent); }
+.wslot--posted .wslot-dot { color: #16a34a; }
+.wslot--off .wslot-dot { color: var(--text-secondary); }
+
+.wslot-time {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+/* ===== Bulk Modal ===== */
+.bulk-modal {
+  max-width: 360px;
+}
+
+.bulk-section {
+  margin-bottom: 16px;
+}
+
+.bulk-label {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.bulk-day-types {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.bulk-day-btn {
+  padding: 6px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.bulk-day-btn--active {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.bulk-custom-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.bulk-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.bulk-times {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bulk-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.bulk-op-btn {
+  flex: 1;
+  padding: 8px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.bulk-op-btn--on {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.bulk-op-btn--off {
+  border-color: var(--text-secondary);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
 /* ===== Settings Modal ===== */
 .settings-field {
   margin-bottom: 16px;

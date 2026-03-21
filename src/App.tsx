@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import type { Tweet, ScheduledTweet } from './types';
 import { AutoGenerateTab } from './components/AutoGenerateTab';
 import { KeywordTab } from './components/KeywordTab';
+import { ScheduleTab } from './components/ScheduleTab';
 import { ScheduledList } from './components/ScheduledList';
 import { Toast } from './components/Toast';
 import { SettingsModal } from './components/SettingsModal';
@@ -16,7 +17,7 @@ import {
 } from './utils/scheduledTweets';
 import './App.css';
 
-type Tab = 'auto' | 'keyword';
+type Tab = 'auto' | 'keyword' | 'schedule';
 
 interface ToastState {
   message: string;
@@ -155,19 +156,29 @@ export default function App() {
           className={`tab-btn ${tab === 'keyword' ? 'tab-btn--active' : ''}`}
           onClick={() => setTab('keyword')}
         >
-          🔍 キーワード検索
+          🔍 キーワード
+        </button>
+        <button
+          className={`tab-btn ${tab === 'schedule' ? 'tab-btn--active' : ''}`}
+          onClick={() => setTab('schedule')}
+        >
+          📅 投稿スケジュール
         </button>
       </nav>
 
       <main className="app-main">
-        {tab === 'auto' ? (
+        {tab === 'auto' && (
           <AutoGenerateTab
             onImmediate={handleImmediate}
             onSchedule={handleSchedule}
             scheduled={scheduled}
           />
-        ) : (
+        )}
+        {tab === 'keyword' && (
           <KeywordTab onImmediate={handleImmediate} onSchedule={handleSchedule} />
+        )}
+        {tab === 'schedule' && (
+          <ScheduleTab onToast={showToast} />
         )}
 
         <section className="scheduled-section">
