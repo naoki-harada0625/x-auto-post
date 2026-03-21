@@ -96,6 +96,22 @@ async function putToGitHub(
 }
 
 /**
+ * scheduled-tweets.json を GitHub から取得し localStorage と同期する。
+ * トークン未設定時は null を返す（エラーにしない）。
+ */
+export async function syncFromGitHub(): Promise<ScheduledTweet[] | null> {
+  const token = getGithubToken();
+  if (!token) return null;
+  try {
+    const { tweets } = await fetchFromGitHub(token);
+    saveScheduled(tweets);
+    return tweets;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * scheduled-tweets.json にツイートを追記してコミットする。
  */
 export async function pushTweetToGitHub(tweet: ScheduledTweet): Promise<void> {
