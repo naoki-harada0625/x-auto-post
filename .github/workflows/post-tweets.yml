@@ -1,11 +1,8 @@
-name: Post Scheduled Tweets
+name: Post Scheduled Tweets (Manual)
 
+# cronはauto-post.ymlに統合済み。このワークフローは手動トリガー専用。
+# 「今すぐ実行」ボタンから呼び出される。
 on:
-  push:
-    branches:
-      - main
-  schedule:
-    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 permissions:
