@@ -110,30 +110,33 @@ def should_post_scheduled(entry: dict, now_jst: datetime) -> bool:
 def process_scheduled_tweets(client: tweepy.Client, now_jst: datetime) -> None:
     print("\n=== Part 1: scheduled-tweets.json ===")
     tweets = load_scheduled_tweets()
+    print(f"Scheduled tweets: {len(tweets)} entries")
     if not tweets:
         print("No scheduled tweets found.")
         return
 
-    to_post = [t for t in tweets if should_post_scheduled(t, now_jst)]
-    if not to_post:
-        print("No scheduled tweets to post at this time.")
-        return
-
     posted_ids: set[str] = set()
-    for entry in to_post:
+    for entry in tweets:
+        print(f"  Entry id={entry.get('id')}: scheduledAt={entry.get('scheduledAt')}, immediate={entry.get('immediate')}, posted={entry.get('posted')}")
+        should = should_post_scheduled(entry, now_jst)
+        print(f"  -> Should post: {should}")
+        if not should:
+            continue
         tweet_text = build_tweet_text(entry.get("text", ""), entry.get("tags", []))
         try:
             response = client.create_tweet(text=tweet_text)
             tweet_id = response.data["id"]
-            print(f"Posted tweet id={tweet_id}: {tweet_text[:60]}...")
+            print(f"  -> Posted: {tweet_id} | {tweet_text[:60]}...")
             posted_ids.add(entry["id"])
         except Exception as exc:  # noqa: BLE001
-            print(f"Failed to post {entry['id']}: {exc}", file=sys.stderr)
+            print(f"  -> Failed: {exc}", file=sys.stderr)
 
     if posted_ids:
         remaining = [t for t in tweets if t["id"] not in posted_ids]
         save_scheduled_tweets(remaining)
         print(f"Done. Posted {len(posted_ids)}, {len(remaining)} remaining.")
+    else:
+        print("No scheduled tweets to post at this time.")
 
 
 # ─── Part 2: auto-schedule.json ────────────────────────────────────────────
