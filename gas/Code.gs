@@ -329,7 +329,7 @@ function computeOAuthSignature_(method, url, oauthParams, consumerSecret, tokenS
   var signingKey = percentEncode_(consumerSecret) + '&' + percentEncode_(tokenSecret);
 
   // HMAC-SHA1 → Base64
-  var rawSig = Utilities.computeHmacSha1Signature(baseString, signingKey);
+  var rawSig = Utilities.computeHmacSignature(Utilities.MacAlgorithm.HMAC_SHA_1, baseString, signingKey);
   return Utilities.base64Encode(rawSig);
 }
 
