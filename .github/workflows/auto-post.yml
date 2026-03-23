@@ -40,13 +40,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           changed=false
-          if ! git diff --quiet scheduled-tweets.json 2>/dev/null && [ -f scheduled-tweets.json ]; then
+          if [ -f scheduled-tweets.json ] && ! git diff --quiet HEAD -- scheduled-tweets.json; then
             git add scheduled-tweets.json
             changed=true
+            echo "scheduled-tweets.json changed"
           fi
-          if ! git diff --quiet auto-schedule.json 2>/dev/null && [ -f auto-schedule.json ]; then
+          if [ -f auto-schedule.json ] && ! git diff --quiet HEAD -- auto-schedule.json; then
             git add auto-schedule.json
             changed=true
+            echo "auto-schedule.json changed"
           fi
           if [ "$changed" = "true" ]; then
             git commit -m "chore: update posted status in JSON files [skip ci]"
