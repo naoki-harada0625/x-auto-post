@@ -102,8 +102,12 @@ def should_post_scheduled(entry: dict, now_jst: datetime) -> bool:
         scheduled_dt = datetime.fromisoformat(scheduled_at.replace("Z", "+00:00"))
         scheduled_dt_jst = scheduled_dt.astimezone(JST)
         diff = now_jst - scheduled_dt_jst
-        # 予定時刻を過ぎている、かつ15分以内（二重投稿防止）
-        return timedelta(0) <= diff <= timedelta(minutes=15)
+        print(f"    scheduledAt(JST)={scheduled_dt_jst.strftime('%Y-%m-%d %H:%M:%S')}, "
+              f"now(JST)={now_jst.strftime('%Y-%m-%d %H:%M:%S')}, diff={diff}")
+        # 予定時刻を過ぎていれば投稿（上限なし）
+        # cronの遅延対策: 上限を設けると遅延時に永久にスキップされるため
+        # 二重投稿防止はリストからの削除で担保
+        return diff >= timedelta(0)
     return False
 
 
