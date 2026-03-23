@@ -1,8 +1,8 @@
 name: Auto Post from Schedule
 
 on:
-  schedule:
-    - cron: '*/15 * * * *'
+  # cronはGASトリガーに移行済み（15分おき・正確な実行が保証される）
+  # このワークフローは緊急時の手動実行専用
   workflow_dispatch:
 
 permissions:
