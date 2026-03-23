@@ -32,7 +32,11 @@ jobs:
           X_CONSUMER_SECRET: ${{ secrets.X_CONSUMER_SECRET }}
           X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
           X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
-        run: python scripts/post-tweet.py
+          # GEMINI_API_KEY is intentionally omitted here: auto-post.py will skip
+          # Part 2 (auto-schedule) when the key is absent, so only Part 1
+          # (scheduled-tweets.json) runs – identical behaviour to the old
+          # post-tweet.py but using the exact same code path as the cron job.
+        run: python scripts/auto-post.py
 
       - name: Commit updated scheduled-tweets.json
         run: |

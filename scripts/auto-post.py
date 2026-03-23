@@ -75,6 +75,7 @@ def get_twitter_client() -> tweepy.Client:
         consumer_secret=os.environ["X_CONSUMER_SECRET"],
         access_token=os.environ["X_ACCESS_TOKEN"],
         access_token_secret=os.environ["X_ACCESS_TOKEN_SECRET"],
+        wait_on_rate_limit=True,
     )
 
 
@@ -232,6 +233,9 @@ def generate_tweet(slot_time: str) -> tuple[str, list[str]]:
 
 def process_auto_schedule(client: tweepy.Client, now_jst: datetime) -> None:
     print("\n=== Part 2: auto-schedule.json ===")
+    if not os.environ.get("GEMINI_API_KEY"):
+        print("GEMINI_API_KEY not set, skipping auto-schedule.")
+        return
     schedule = load_auto_schedule()
     slots: list[dict] = schedule.get("slots", [])
 
