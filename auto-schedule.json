@@ -617,6 +617,11 @@
       "date": "2026-03-31",
       "time": "24:00",
       "enabled": true
+    },
+    {
+      "date": "2026-03-25",
+      "time": "12:00",
+      "enabled": true
     }
   ],
   "defaultTimes": [
