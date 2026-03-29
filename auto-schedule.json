@@ -602,7 +602,8 @@
     {
       "date": "2026-03-29",
       "time": "24:00",
-      "enabled": true
+      "enabled": true,
+      "posted": true
     },
     {
       "date": "2026-03-30",
